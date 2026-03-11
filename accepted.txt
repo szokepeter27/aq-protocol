@@ -1,0 +1,132 @@
+# AQ – accepted.txt (élő döntési állapot)
+
+Ez a fájl az aktuálisan elfogadott értelmezéseket, vállalt viselkedéseket és döntéseket rögzíti.
+
+Ez NEM:
+- specifikáció,
+- dokumentáció,
+- végleges állításgyűjtemény.
+
+Ez IGEN:
+- élő döntési állapot,
+- a további beszélgetések alapértelmezett kiindulópontja.
+
+## Használati elv
+- Ami itt szerepel, azt az asszisztens elfogadottnak tekinti.
+- Ezek a pontok nem kerülnek újra felhozásra,
+  kivéve ha:
+  - a felhasználó kifejezetten jelzi a döntés változását, vagy
+  - a jelenlegi kód/dokumentáció már nem egyezik vele.
+
+## Bejegyzések
+
+---
+
+## Állapot
+- A projekt jelenlegi állapota: local-only, development fázis.
+- Nincs production környezet, nincs prod-kompatibilitási elvárás.
+- Minden „DEV-only” viselkedés ebben a kontextusban értelmezendő.
+
+## Dokumentáció
+
+- A Manifest tudatosan minimál, nem teljes leírás.
+- A Guide nem kézikönyv, csak vállalt referencia-viselkedés.
+- Ami működik, de nincs dokumentálva, az nem automatikusan hiány.
+
+---
+
+## Runtime / UX
+
+- A protokoll nem kommunikál szöveges hibát.
+- Fekete képernyő page boot hiba esetén elfogadott viselkedés.
+
+---
+
+## Loader / Dev
+
+- DEV-only kényelmi viselkedések (pl. path-alapú betöltés) nem protokoll-kompatibilisek.
+- A local webserver és egyéb DX tooling nem dokumentációs téma.
+
+---
+
+## Felelősségi határ
+
+- A page felelős a saját bootjáért (`AQ_PAGE_READY`).
+- A host nem próbálja „megjavítani” a hibás page-et.
+
+---
+
+## Loader / Block
+- Az ALLOW_WHILE_LOCKED egy szándékosan előkészített horog.
+- Alapértelmezett viselkedés: default deny.
+- Block alatt a tiltott protokoll-hívások silent OK-val eldobódnak.
+
+## UX vs DX
+- A console.error és az AQ_ERROR DX-szintű jelzés.
+- Nem minősül felhasználói kommunikációnak, nem sérti az UX elveket.
+
+## Overlay
+- Az overlay tisztán implementációs UX elem.
+- Soha nem válik normatívvá vagy protokoll-elemmé.
+
+---
+
+Storage capability bevezetve:
+
+- DAO-scoped IndexedDB storage
+- namespace = daoConfig.path
+- B-modell prefix invariáns
+- atomic rename
+- recursive delete
+- Unicode NFC normalizáció
+- text-only storage
+
+Storage node modell módosítva:
+
+- A storage rekord séma: `{ k, v, m }`
+  - `v` = node text (string)
+  - `m` = node meta (string)
+- A meta is text (nem külön típus, nem structured object).
+- A storage továbbra is text-only modell.
+
+Unified node API bevezetve:
+
+- storagePut(name, { text?, meta? })
+- storageGet(name) → { text, meta } | null
+- A put részleges update:
+  - a meg nem adott mezők változatlanok maradnak.
+
+Root node viselkedés:
+
+- root text nem írható és mindig "".
+- root meta írható és olvasható.
+- storageDelete("") a teljes DAO namespace-t törli.
+
+storageList viselkedés módosítva:
+
+- default: meta-first lista
+- storageList(prefix) →
+  { items: [ { name, meta } ] }
+
+- storageList(prefix, { meta:false }) →
+  { items: [ name ] }
+
+- storageList(prefix, { text:true }) →
+  { text, items: [ { name, meta } ] }
+
+- A storageList mindig az exact child node meta-ját adja vissza.
+- Nincs subtree-meta öröklés vagy implicit meta feloldás.
+
+Rename invariáns kiterjesztve:
+
+- rename megőrzi mind a text (`v`), mind a meta (`m`) mezőt.
+
+locked policy módosítva:
+
+- locked alatt nem allow metódus → AQ_ERROR "[AQ] locked"
+- silent OK megszüntetve
+
+## Storage rename invariáns
+
+A prefix-zárt modell miatt rename során elegendő a target prefix létezésének ellenőrzése.
+Külön subtree vizsgálat nem szükséges.
