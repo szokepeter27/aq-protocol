@@ -1,3 +1,4 @@
+test
 Ez a dokumentum a process.md által definiált interakciós protokoll alatt értelmezendő.
 Értelmezési prioritás: process.md > sum.txt > accepted.txt > projekt dokumentumok és kód.
 
